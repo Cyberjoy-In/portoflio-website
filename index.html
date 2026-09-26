@@ -398,7 +398,6 @@ if(!reduceMotion && window.matchMedia('(pointer:fine)').matches){
     cursorFrame = requestAnimationFrame(moveBackground);
   }
   cursorFrame = requestAnimationFrame(moveBackground);
-  window.addEventListener('blur', ()=>cancelAnimationFrame(cursorFrame));
 }
 
 // Give the first viewport a polished entrance, then let scroll reveal handle the rest.
