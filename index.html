@@ -16,6 +16,7 @@
 *{box-sizing:border-box; margin:0; padding:0;}
 html{scroll-behavior:smooth; scroll-padding-top: calc(80px + env(safe-area-inset-top,0px));}
 body{background:var(--bg); color:var(--ink); overflow-x:hidden; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);}
+body{--mouse-x:50%; --mouse-y:20%; --grid-x:0px; --grid-y:0px;}
 h1,h2,h3,.disp{font-family:'Space Grotesk',sans-serif;}
 a{color:inherit; text-decoration:none;}
 .wrap{max-width:1120px; margin:0 auto; padding:0 28px;}
@@ -25,8 +26,13 @@ section{position:relative; padding:120px 0;}
 /* background texture */
 .grid-bg{position:fixed; inset:0; z-index:0; pointer-events:none;
   background-image: linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
-  background-size:64px 64px; mask-image: radial-gradient(ellipse 80% 60% at 50% 20%, #000 40%, transparent 100%);
+  background-size:64px 64px; background-position:var(--grid-x) var(--grid-y);
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 20%, #000 40%, transparent 100%);
+  transition:background-position .25s ease-out;
 }
+.grid-bg::before{content:''; position:absolute; inset:0; background:radial-gradient(420px circle at var(--mouse-x) var(--mouse-y), rgba(73,217,201,.13), transparent 68%); opacity:.9;}
+.cursor-glow{position:fixed; left:var(--mouse-x); top:var(--mouse-y); width:180px; height:180px; z-index:0; pointer-events:none; transform:translate(-50%,-50%); border-radius:50%; background:radial-gradient(circle, rgba(73,217,201,.10), rgba(138,124,245,.045) 35%, transparent 72%); filter:blur(8px); transition:left .18s ease-out, top .18s ease-out;}
+section, footer{z-index:1;}
 
 /* nav */
 nav{position:fixed; top:18px; left:50%; transform:translateX(-50%); z-index:100;
@@ -125,8 +131,22 @@ h1.name{font-size:clamp(40px,6vw,68px); line-height:1.02; font-weight:700; lette
 
 footer{text-align:center; padding:32px 0 48px; color:var(--muted); font-size:13px;}
 
-.reveal{opacity:0; transform:translateY(24px); transition:opacity .7s ease, transform .7s ease;}
-.reveal.in{opacity:1; transform:translateY(0);}
+.reveal{opacity:0; transform:translate3d(0,34px,0) scale(.985); filter:blur(5px); transition:opacity .8s cubic-bezier(.2,.8,.2,1), transform .8s cubic-bezier(.2,.8,.2,1), filter .8s ease; transition-delay:var(--reveal-delay,0ms);}
+.reveal.in{opacity:1; transform:translate3d(0,0,0) scale(1); filter:blur(0);}
+.about-grid .reveal:nth-child(2), .camp-grid .reveal:nth-child(2){--reveal-delay:90ms;}
+.about-grid .reveal:nth-child(3){--reveal-delay:180ms;}
+.about-grid .reveal:nth-child(4){--reveal-delay:270ms;}
+.about-grid .reveal:nth-child(5){--reveal-delay:360ms;}
+.about-grid .reveal:nth-child(6){--reveal-delay:450ms;}
+.timeline .t-item:nth-child(2), .cert-grid .reveal:nth-child(2), .skill-block:nth-child(2){--reveal-delay:100ms;}
+.timeline .t-item:nth-child(3), .cert-grid .reveal:nth-child(3), .skill-block:nth-child(3){--reveal-delay:200ms;}
+.timeline .t-item:nth-child(4), .cert-grid .reveal:nth-child(4), .skill-block:nth-child(4){--reveal-delay:300ms;}
+.timeline .t-item:nth-child(5), .cert-grid .reveal:nth-child(5), .skill-block:nth-child(5){--reveal-delay:400ms;}
+body.page-ready #hero .hero-grid > *{animation:hero-enter .95s cubic-bezier(.2,.8,.2,1) both;}
+body.page-ready #hero .hero-grid > :nth-child(2){animation-delay:140ms;}
+@keyframes hero-enter{from{opacity:0; transform:translate3d(0,28px,0); filter:blur(6px);}to{opacity:1; transform:none; filter:blur(0);}}
+@keyframes section-focus{0%{box-shadow:inset 0 0 0 0 rgba(73,217,201,0);}35%{box-shadow:inset 0 0 80px 0 rgba(73,217,201,.08);}100%{box-shadow:inset 0 0 0 0 rgba(73,217,201,0);}}
+.section-focus{animation:section-focus 1.1s ease both;}
 
 @media (max-width:860px){
   .hero-grid{grid-template-columns:1fr; text-align:left;}
@@ -145,6 +165,7 @@ footer{text-align:center; padding:32px 0 48px; color:var(--muted); font-size:13p
 @media (prefers-reduced-motion: reduce){
   *{animation:none !important; transition:none !important;}
   .reveal{opacity:1; transform:none;}
+  .cursor-glow{display:none;}
 }
 @media (prefers-color-scheme: light){
   :root:not([data-theme="dark"]){ }
@@ -154,6 +175,7 @@ footer{text-align:center; padding:32px 0 48px; color:var(--muted); font-size:13p
 <body>
 
 <div class="grid-bg"></div>
+<div class="cursor-glow" aria-hidden="true"></div>
 
 <nav>
   <span class="mark">JH_</span>
@@ -286,7 +308,7 @@ footer{text-align:center; padding:32px 0 48px; color:var(--muted); font-size:13p
 <section id="contact">
   <div class="wrap">
     <div class="contact-panel reveal">
-      <h2>Let's build something meaningful.</h2>
+      <h2>Let's build a safer digital space.</h2>
       <p>Open to OSINT, digital forensics and cybercrime investigation opportunities — reach out directly.</p>
       <div class="contact-links">
         <a class="btn btn-primary" href="mailto:contact.cyberjoy@gmail.com">Email me</a>
@@ -354,8 +376,36 @@ document.getElementById('skillsList').innerHTML = skills.map(s => `
   <div class="skill-block reveal"><h3>${s.h}</h3><div class="tag-row">${s.items.map(i=>`<span class="tag">${i}</span>`).join('')}</div></div>`).join('');
 
 
-// ---- scroll reveal ----
+// ---- cursor-reactive background ----
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+if(!reduceMotion && window.matchMedia('(pointer:fine)').matches){
+  let targetX = window.innerWidth * .5, targetY = window.innerHeight * .2;
+  let currentX = targetX, currentY = targetY;
+  let cursorFrame;
+  window.addEventListener('pointermove', (e)=>{
+    targetX = e.clientX;
+    targetY = e.clientY;
+  }, {passive:true});
+  function moveBackground(){
+    currentX += (targetX - currentX) * .12;
+    currentY += (targetY - currentY) * .12;
+    const shiftX = (currentX / window.innerWidth - .5) * -22;
+    const shiftY = (currentY / window.innerHeight - .5) * -22;
+    document.body.style.setProperty('--mouse-x', `${currentX}px`);
+    document.body.style.setProperty('--mouse-y', `${currentY}px`);
+    document.body.style.setProperty('--grid-x', `${shiftX}px`);
+    document.body.style.setProperty('--grid-y', `${shiftY}px`);
+    cursorFrame = requestAnimationFrame(moveBackground);
+  }
+  cursorFrame = requestAnimationFrame(moveBackground);
+  window.addEventListener('blur', ()=>cancelAnimationFrame(cursorFrame));
+}
+
+// Give the first viewport a polished entrance, then let scroll reveal handle the rest.
+requestAnimationFrame(()=>document.body.classList.add('page-ready'));
+
+
+// ---- scroll reveal ----
 if(!reduceMotion){
   const io = new IntersectionObserver((entries)=>{
     entries.forEach(en=>{ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); } });
@@ -373,6 +423,17 @@ hamburger.addEventListener('click', ()=>{
   mobileMenu.style.display = open ? 'none' : 'flex';
 });
 mobileMenu.querySelectorAll('a').forEach(a=>a.addEventListener('click', ()=> mobileMenu.style.display='none'));
+
+// Make anchor navigation feel like a transition between portfolio pages.
+document.querySelectorAll('a[href^="#"]').forEach(link=>{
+  link.addEventListener('click', ()=>{
+    const target = document.querySelector(link.getAttribute('href'));
+    if(!target || reduceMotion) return;
+    target.classList.remove('section-focus');
+    requestAnimationFrame(()=>target.classList.add('section-focus'));
+    window.setTimeout(()=>target.classList.remove('section-focus'), 1200);
+  });
+});
 
 // ---- portrait parallax (mouse-based 3D tilt) ----
 const stage = document.getElementById('portraitStage');
