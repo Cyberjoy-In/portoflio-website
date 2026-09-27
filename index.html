@@ -419,8 +419,20 @@ renderTimeline(document.getElementById('timelineList'), experience);
 renderTimeline(document.getElementById('eduList'), education);
 
 document.getElementById('certList').innerHTML = certs.map((c, index) => `
-  <button class="cert-card reveal" type="button" data-cert-index="${index}" aria-label="View ${c.t}"><span class="ic">✓</span><span><h4>${c.t}</h4><p>${c.s}</p></span></button>`).join('');
-
+  <button
+    class="cert-card reveal certificate-link"
+    type="button"
+    data-cert-index="${index}"
+    data-certificate="${c.t}"
+    aria-label="View ${c.t}"
+  >
+    <span class="ic">✓</span>
+    <span>
+      <h4>${c.t}</h4>
+      <p>${c.s}</p>
+    </span>
+  </button>
+`).join('');
 document.getElementById('skillsList').innerHTML = skills.map(s => `
   <div class="skill-block reveal"><h3>${s.h}</h3><div class="tag-row">${s.items.map(i=>`<span class="tag">${i}</span>`).join('')}</div></div>`).join('');
 
