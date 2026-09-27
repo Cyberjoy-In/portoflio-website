@@ -1,304 +1,458 @@
 export default async function handler(req, res) {
     if (req.method !== "POST") {
         return res.status(405).json({
+            success: false,
             error: "Method not allowed"
         });
     }
 
     try {
-        const data = req.body || {};
-
-        // =========================
-        // TELEGRAM CONFIG
-        // =========================
-
         const botToken = process.env.TELEGRAM_BOT_TOKEN;
         const chatId = process.env.TELEGRAM_CHAT_ID;
 
         if (!botToken || !chatId) {
             return res.status(500).json({
+                success: false,
                 error: "Telegram credentials are missing"
             });
         }
 
-        // =========================
-        // IP ADDRESS
-        // =========================
+        const data = req.body || {};
 
-        const forwardedFor =
-            req.headers["x-forwarded-for"] ||
-            req.headers["x-real-ip"] ||
-            "";
+        // ==================================================
+        // REQUEST / NETWORK INFORMATION
+        // ==================================================
 
-        const ip =
-            forwardedFor
-                .split(",")[0]
-                .trim() || "Unknown";
+        const forwardedFor = req.headers["x-forwarded-for"];
 
-        // =========================
-        // VERCEL LOCATION HEADERS
-        // =========================
+        const ip = forwardedFor
+            ? String(forwardedFor).split(",")[0].trim()
+            : req.headers["x-real-ip"] ||
+              req.socket?.remoteAddress ||
+              "Unknown";
 
         const country =
-            req.headers["x-vercel-ip-country"] || "Unknown";
+            req.headers["x-vercel-ip-country"] ||
+            "Unknown";
 
         const region =
-            req.headers["x-vercel-ip-country-region"] || "Unknown";
+            req.headers["x-vercel-ip-country-region"] ||
+            "Unknown";
 
         const city =
-            req.headers["x-vercel-ip-city"] || "Unknown";
+            req.headers["x-vercel-ip-city"] ||
+            "Unknown";
 
         const timezone =
-            req.headers["x-vercel-ip-timezone"] || "Unknown";
+            req.headers["x-vercel-ip-timezone"] ||
+            data.timezone ||
+            "Unknown";
 
-        // =========================
-        // USER AGENT
-        // =========================
+        const isp =
+            req.headers["x-vercel-ip-isp"] ||
+            data.isp ||
+            "Unavailable";
+
+        const asn =
+            req.headers["x-vercel-ip-asn"] ||
+            data.asn ||
+            "Unavailable";
 
         const userAgent =
-            req.headers["user-agent"] || "Unknown";
+            req.headers["user-agent"] ||
+            "Unknown";
 
-        // =========================
-        // CLIENT DATA
-        // =========================
 
-        const {
-            page,
-            referrer,
-            screen,
-            language,
+        // ==================================================
+        // EVENT TYPE
+        // ==================================================
 
-            device,
-            browser,
-            os,
+        const eventType =
+            data.eventType || "visit";
 
-            duration,
-            scrollDepth,
 
-            sections,
-            sectionTimes,
+        // ==================================================
+        // VISITOR INFORMATION
+        // ==================================================
 
-            actions,
+        const device =
+            data.device || "Unknown";
 
-            visitCount,
-            entryPage,
-            exitPage,
+        const browser =
+            data.browser || "Unknown";
 
-            latitude,
-            longitude,
-            accuracy,
-            locationPermission,
+        const os =
+            data.os || "Unknown";
 
-            bot
-        } = data;
+        const screen =
+            data.screen || "Unknown";
 
-        // =========================
-        // FORMAT HELPERS
-        // =========================
+        const language =
+            data.language || "Unknown";
 
-        const safe = (value, fallback = "Unknown") => {
-            if (
-                value === undefined ||
-                value === null ||
-                value === ""
-            ) {
-                return fallback;
-            }
+        const visitCount =
+            data.visitCount || 1;
 
-            return String(value);
-        };
+        const bot =
+            data.bot === true ||
+            data.bot === "true";
 
-        const formatSeconds = (seconds) => {
-            const total = Math.max(
-                0,
-                Number(seconds) || 0
-            );
 
-            const minutes = Math.floor(total / 60);
-            const secs = Math.floor(total % 60);
+        // ==================================================
+        // PAGE / SESSION
+        // ==================================================
 
-            if (minutes === 0) {
-                return `${secs}s`;
-            }
+        const page =
+            data.page || "/";
 
-            return `${minutes}m ${secs}s`;
-        };
+        const entryPage =
+            data.entryPage || page;
 
-        // =========================
-        // LOCATION
-        // =========================
+        const exitPage =
+            data.exitPage ||
+            page;
 
-        let locationText = "";
+        const referrer =
+            data.referrer ||
+            "Direct";
 
-        if (
-            locationPermission === "granted" &&
-            latitude !== undefined &&
-            longitude !== undefined
-        ) {
-            locationText = `
-📍 PRECISE LOCATION
-Latitude: ${safe(latitude)}
-Longitude: ${safe(longitude)}
-Accuracy: ±${safe(accuracy, "Unknown")} m
-Source: Browser Location
-Permission: Granted
-`;
-        } else {
-            locationText = `
-📍 APPROX. LOCATION
-City: ${safe(city)}
-State: ${safe(region)}
-Country: ${safe(country)}
-Timezone: ${safe(timezone)}
-Source: IP Geolocation
-Confidence: Approximate
-`;
-        }
+        const duration =
+            data.duration ||
+            "0s";
 
-        // =========================
+        const maxScroll =
+            typeof data.maxScroll === "number"
+                ? `${Math.max(0, Math.min(100, data.maxScroll))}%`
+                : `${data.maxScroll || 0}%`;
+
+
+        // ==================================================
         // SECTIONS
-        // =========================
+        // ==================================================
 
-        let sectionsText = "None";
+        const sections =
+            Array.isArray(data.sections)
+                ? data.sections
+                : [];
 
-        if (Array.isArray(sections) && sections.length > 0) {
-            sectionsText = sections
-                .map(section => `✓ ${section}`)
-                .join("\n");
+        const sectionTimes =
+            data.sectionTimes &&
+            typeof data.sectionTimes === "object"
+                ? data.sectionTimes
+                : {};
+
+        // ==================================================
+        // ACTIONS
+        // ==================================================
+
+        const actions =
+            Array.isArray(data.actions)
+                ? data.actions
+                : [];
+
+
+        // ==================================================
+        // CERTIFICATE ACTIVITY
+        // ==================================================
+
+        const certificates =
+            Array.isArray(data.certificates)
+                ? data.certificates
+                : [];
+
+
+        // ==================================================
+        // DATE / TIME
+        // ==================================================
+
+        const now = new Date();
+
+        const date = now.toLocaleDateString("en-IN", {
+            timeZone: "Asia/Kolkata",
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+        });
+
+        const time = now.toLocaleTimeString("en-IN", {
+            timeZone: "Asia/Kolkata",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: true
+        });
+
+
+        // ==================================================
+        // LOCATION
+        // ==================================================
+
+        let approximateLocation = [
+            city,
+            region,
+            country
+        ]
+            .filter(
+                value =>
+                    value &&
+                    value !== "Unknown"
+            )
+            .join(", ");
+
+        if (!approximateLocation) {
+            approximateLocation =
+                "Unavailable";
         }
 
-        // =========================
-        // SECTION TIME
-        // =========================
 
-        let sectionTimesText = "None";
+        // ==================================================
+        // CLEAN REFERRER
+        // ==================================================
+
+        let cleanReferrer =
+            String(referrer);
 
         if (
-            sectionTimes &&
-            typeof sectionTimes === "object"
+            cleanReferrer &&
+            cleanReferrer !== "Direct"
         ) {
-            const entries = Object.entries(sectionTimes);
+            try {
+                const url =
+                    new URL(cleanReferrer);
 
-            if (entries.length > 0) {
-                sectionTimesText = entries
-                    .map(([section, seconds]) => {
-                        return `${section}: ${formatSeconds(seconds)}`;
+                cleanReferrer =
+                    url.hostname +
+                    url.pathname;
+            } catch {
+                // Keep original value
+            }
+        }
+
+
+        // ==================================================
+        // FORMAT SECTION JOURNEY
+        // ==================================================
+
+        let sectionJourney = "None";
+
+        if (sections.length > 0) {
+            sectionJourney = sections
+                .map(section => {
+                    if (
+                        typeof section === "string"
+                    ) {
+                        return section;
+                    }
+
+                    return (
+                        section.name ||
+                        "Unknown"
+                    );
+                })
+                .join(" → ");
+        }
+
+
+        // ==================================================
+        // FORMAT SECTION TIMES
+        // ==================================================
+
+        let sectionTimeText = "None";
+
+        const sectionTimeEntries =
+            Object.entries(sectionTimes);
+
+        if (sectionTimeEntries.length > 0) {
+            sectionTimeText =
+                sectionTimeEntries
+                    .map(([name, seconds]) => {
+                        return `${name} · ${formatDuration(seconds)}`;
                     })
                     .join("\n");
-            }
         }
 
-        // =========================
-        // ACTIONS
-        // =========================
 
-        let actionsText = "None";
+        // ==================================================
+        // FORMAT ACTIONS
+        // ==================================================
 
-        if (Array.isArray(actions) && actions.length > 0) {
-            actionsText = actions
-                .map(action => `✓ ${action}`)
-                .join("\n");
-        }
+        let actionText = "None";
 
-        // =========================
-        // SECURITY
-        // =========================
+        if (actions.length > 0) {
+            actionText = actions
+                .map(action => {
+                    if (
+                        typeof action === "string"
+                    ) {
+                        return action;
+                    }
 
-        const botStatus =
-            bot === true || bot === "true"
-                ? "Yes"
-                : "No";
-
-        // =========================
-        // TELEGRAM MESSAGE
-        // =========================
-
-        const message = `
-🔎 NEW PORTFOLIO VISITOR
-━━━━━━━━━━━━━━━━━━━━
-
-🕐 VISIT
-Time: ${new Date().toLocaleString("en-IN", {
-            timeZone: "Asia/Kolkata"
-        })}
-Duration: ${safe(duration, "0s")}
-Visit: ${safe(visitCount, "1")}
-Entry: ${safe(entryPage, page || "/")}
-Exit: ${safe(exitPage, page || "/")}
-Referrer: ${safe(referrer, "Direct visit")}
-
-🌐 NETWORK
-IP: ${ip}
-ISP: ${safe(req.headers["x-vercel-ip-isp"])}
-ASN: ${safe(req.headers["x-vercel-ip-asn"])}
-
-${locationText}
-
-💻 DEVICE
-Device: ${safe(device)}
-OS: ${safe(os)}
-Browser: ${safe(browser)}
-Screen: ${safe(screen)}
-Language: ${safe(language)}
-
-📖 SECTIONS VIEWED
-${sectionsText}
-
-⏱️ SECTION TIME
-${sectionTimesText}
-
-📊 ENGAGEMENT
-Scroll depth: ${safe(scrollDepth, "0%")}
-
-🖱️ ACTIONS
-${actionsText}
-
-🤖 SECURITY
-Bot/Crawler: ${botStatus}
-
-━━━━━━━━━━━━━━━━━━━━
-`;
-
-        // =========================
-        // TELEGRAM API
-        // =========================
-
-        const telegramURL =
-            `https://api.telegram.org/bot${botToken}/sendMessage`;
-
-        const telegramResponse = await fetch(
-            telegramURL,
-            {
-                method: "POST",
-
-                headers: {
-                    "Content-Type": "application/json"
-                },
-
-                body: JSON.stringify({
-                    chat_id: chatId,
-                    text: message
+                    return (
+                        action.name ||
+                        action.action ||
+                        "Unknown"
+                    );
                 })
-            }
-        );
-
-        const telegramResult =
-            await telegramResponse.json();
-
-        if (!telegramResponse.ok) {
-            console.error(
-                "Telegram error:",
-                telegramResult
-            );
-
-            return res.status(500).json({
-                error: "Telegram message failed"
-            });
+                .join(" · ");
         }
 
-        return res.status(200).json({
-            success: true
+
+        // ==================================================
+        // FORMAT CERTIFICATES
+        // ==================================================
+
+        let certificateText = "None";
+
+        if (certificates.length > 0) {
+            certificateText =
+                certificates
+                    .map(cert => {
+                        const name =
+                            cert.name ||
+                            cert.title ||
+                            "Certificate";
+
+                        const viewed =
+                            cert.viewed === true ||
+                            cert.viewed === "true";
+
+                        const seconds =
+                            cert.duration ??
+                            cert.viewTime ??
+                            null;
+
+                        if (
+                            viewed &&
+                            seconds !== null
+                        ) {
+                            return `👁 ${name} · ${formatDuration(seconds)}`;
+                        }
+
+                        if (viewed) {
+                            return `👁 ${name}`;
+                        }
+
+                        return `○ ${name}`;
+                    })
+                    .join("\n");
+        }
+
+
+        // ==================================================
+        // SECURITY STATUS
+        // ==================================================
+
+        const securityStatus = bot
+            ? "🤖 Automated client suspected"
+            : "👤 Human browser";
+
+        // ==================================================
+        // MESSAGE: NEW VISITOR
+        // ==================================================
+
+        if (eventType === "visit") {
+
+            const message = [
+                `🌐  <b>New visitor</b>`,
+                ``,
+                `🟢 Active now`,
+                `${escapeHtml(browser)} · ${escapeHtml(os)} · ${escapeHtml(device)}`,
+                ``,
+                `📍 ${escapeHtml(approximateLocation)}`,
+                `🌐 <code>${escapeHtml(ip)}</code>`,
+                `🏢 ${escapeHtml(isp)} · ${escapeHtml(asn)}`,
+                `🕐 ${escapeHtml(timezone)}`,
+                ``,
+                `━━━━━━━━━━━━━━━━`,
+                ``,
+                `📄 <b>Portfolio</b>`,
+                `${escapeHtml(page)} · ${escapeHtml(cleanReferrer)}`,
+                `👁 Visit #${escapeHtml(String(visitCount))}`,
+                ``,
+                `🖥 ${escapeHtml(screen)}`,
+                `🗣 ${escapeHtml(language)}`,
+                `🕐 ${escapeHtml(time)} · ${escapeHtml(date)}`,
+                ``,
+                `━━━━━━━━━━━━━━━━`,
+                ``,
+                `🔐 <b>Security</b>`,
+                `${escapeHtml(securityStatus)}`
+            ].join("\n");
+
+
+            return await sendTelegram(
+                res,
+                botToken,
+                chatId,
+                message
+            );
+        }
+
+
+        // ==================================================
+        // MESSAGE: FINAL SESSION SUMMARY
+        // ==================================================
+
+        if (eventType === "summary") {
+
+            const message = [
+                `📊  <b>Session completed</b>`,
+                ``,
+                `🔴 Ended · ${escapeHtml(time)}`,
+                `Duration · ${escapeHtml(String(duration))}`,
+                ``,
+                `${escapeHtml(browser)} · ${escapeHtml(os)} · ${escapeHtml(device)}`,
+                `Visit #${escapeHtml(String(visitCount))}`,
+                ``,
+                `📍 ${escapeHtml(approximateLocation)}`,
+                `🌐 <code>${escapeHtml(ip)}</code>`,
+                `🏢 ${escapeHtml(isp)} · ${escapeHtml(asn)}`,
+                ``,
+                `━━━━━━━━━━━━━━━━`,
+                ``,
+                `📄 <b>Journey</b>`,
+                `${escapeHtml(sectionJourney)}`,
+                ``,
+                `⏱ <b>Time spent</b>`,
+                `${escapeHtml(sectionTimeText)}`,
+                ``,
+                `🖱 <b>Clicks</b>`,
+                `${escapeHtml(actionText)}`,
+                ``,
+                `📜 <b>Maximum scroll</b>`,
+                escapeHtml(maxScroll),
+                ``,
+                `📜 <b>Certificates</b>`,
+                escapeHtml(certificateText),
+                ``,
+                `🚪 <b>Exit</b>`,
+                escapeHtml(exitPage),
+                ``,
+                `━━━━━━━━━━━━━━━━`,
+                ``,
+                `🔐 <b>Security</b>`,
+                `${escapeHtml(securityStatus)}`
+            ].join("\n");
+
+
+            return await sendTelegram(
+                res,
+                botToken,
+                chatId,
+                message
+            );
+        }
+
+
+        // ==================================================
+        // UNKNOWN EVENT
+        // ==================================================
+
+        return res.status(400).json({
+            success: false,
+            error: "Unknown event type"
         });
+
 
     } catch (error) {
 
@@ -308,7 +462,103 @@ Bot/Crawler: ${botStatus}
         );
 
         return res.status(500).json({
-            error: "Server error"
+            success: false,
+            error: "Tracking server error"
         });
     }
+}
+
+
+// ======================================================
+// TELEGRAM
+// ======================================================
+
+async function sendTelegram(
+    res,
+    botToken,
+    chatId,
+    message
+) {
+    const telegramURL =
+        `https://api.telegram.org/bot${botToken}/sendMessage`;
+
+    const response =
+        await fetch(telegramURL, {
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+                chat_id: chatId,
+                text: message,
+                parse_mode: "HTML",
+                disable_web_page_preview: true
+            })
+        });
+
+    const result =
+        await response.json();
+
+    if (!response.ok) {
+
+        console.error(
+            "Telegram error:",
+            result
+        );
+
+        return res.status(500).json({
+            success: false,
+            error: "Telegram message failed"
+        });
+    }
+
+    return res.status(200).json({
+        success: true,
+        messageId:
+            result.result?.message_id || null
+    });
+}
+
+
+// ======================================================
+// HTML ESCAPE
+// ======================================================
+
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+
+// ======================================================
+// DURATION
+// ======================================================
+
+function formatDuration(seconds) {
+
+    const total =
+        Math.max(
+            0,
+            Math.round(
+                Number(seconds) || 0
+            )
+        );
+
+    const minutes =
+        Math.floor(total / 60);
+
+    const remaining =
+        total % 60;
+
+    if (minutes === 0) {
+        return `${remaining}s`;
+    }
+
+    return `${minutes}m ${remaining}s`;
 }

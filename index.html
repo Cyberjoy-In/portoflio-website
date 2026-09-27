@@ -419,8 +419,20 @@ renderTimeline(document.getElementById('timelineList'), experience);
 renderTimeline(document.getElementById('eduList'), education);
 
 document.getElementById('certList').innerHTML = certs.map((c, index) => `
-  <button class="cert-card reveal" type="button" data-cert-index="${index}" aria-label="View ${c.t}"><span class="ic">✓</span><span><h4>${c.t}</h4><p>${c.s}</p></span></button>`).join('');
-
+  <button
+    class="cert-card reveal certificate-link"
+    type="button"
+    data-cert-index="${index}"
+    data-certificate="${c.t}"
+    aria-label="View ${c.t}"
+  >
+    <span class="ic">✓</span>
+    <span>
+      <h4>${c.t}</h4>
+      <p>${c.s}</p>
+    </span>
+  </button>
+`).join('');
 document.getElementById('skillsList').innerHTML = skills.map(s => `
   <div class="skill-block reveal"><h3>${s.h}</h3><div class="tag-row">${s.items.map(i=>`<span class="tag">${i}</span>`).join('')}</div></div>`).join('');
 
@@ -606,49 +618,76 @@ if(!reduceMotion && window.matchMedia('(pointer:fine)').matches){
 (() => {
     "use strict";
 
-    // ==========================================
-    // VISITOR TRACKER
-    // ==========================================
+    // =========================================================
+    // PORTFOLIO VISITOR TRACKER
+    // =========================================================
 
     const TRACK_URL = "/api/track";
+
+    // ---------------------------------------------------------
+    // SESSION
+    // ---------------------------------------------------------
 
     const startTime = Date.now();
 
     let maxScroll = 0;
-    let locationData = null;
+
+    let initialSent = false;
+    let summarySent = false;
 
     const sectionsViewed = new Set();
+
     const sectionStartTimes = {};
+
     const sectionTimes = {};
 
     const actions = [];
 
-    // ------------------------------------------
+    const certificateActivity = {};
+
+    const entryPage =
+        window.location.pathname;
+
+
+    // =========================================================
     // VISIT COUNT
-    // ------------------------------------------
+    // =========================================================
 
     let visitCount = 1;
 
     try {
-        const previousVisits =
-            parseInt(localStorage.getItem("portfolioVisitCount") || "0", 10);
 
-        visitCount = previousVisits + 1;
+        const previousVisits =
+            parseInt(
+                localStorage.getItem(
+                    "portfolioVisitCount"
+                ) || "0",
+                10
+            );
+
+        visitCount =
+            previousVisits + 1;
 
         localStorage.setItem(
             "portfolioVisitCount",
             visitCount.toString()
         );
-    } catch (e) {
+
+    } catch (error) {
+
         visitCount = 1;
+
     }
 
-    // ------------------------------------------
-    // DEVICE
-    // ------------------------------------------
+
+    // =========================================================
+    // DEVICE TYPE
+    // =========================================================
 
     function getDeviceType() {
-        const width = window.innerWidth;
+
+        const width =
+            window.innerWidth;
 
         if (width <= 768) {
             return "Mobile";
@@ -661,30 +700,51 @@ if(!reduceMotion && window.matchMedia('(pointer:fine)').matches){
         return "Desktop";
     }
 
-    // ------------------------------------------
+
+    // =========================================================
     // BROWSER
-    // ------------------------------------------
+    // =========================================================
 
     function getBrowser() {
-        const ua = navigator.userAgent;
 
-        if (ua.includes("Edg/")) return "Microsoft Edge";
-        if (ua.includes("OPR/")) return "Opera";
-        if (ua.includes("Chrome/")) return "Chrome";
-        if (ua.includes("Firefox/")) return "Firefox";
-        if (ua.includes("Safari/") && !ua.includes("Chrome/")) {
+        const ua =
+            navigator.userAgent;
+
+        if (ua.includes("Edg/")) {
+            return "Microsoft Edge";
+        }
+
+        if (ua.includes("OPR/")) {
+            return "Opera";
+        }
+
+        if (ua.includes("Chrome/")) {
+            return "Chrome";
+        }
+
+        if (ua.includes("Firefox/")) {
+            return "Firefox";
+        }
+
+        if (
+            ua.includes("Safari/") &&
+            !ua.includes("Chrome/")
+        ) {
             return "Safari";
         }
 
         return "Unknown";
     }
 
-    // ------------------------------------------
+
+    // =========================================================
     // OPERATING SYSTEM
-    // ------------------------------------------
+    // =========================================================
 
     function getOS() {
-        const ua = navigator.userAgent;
+
+        const ua =
+            navigator.userAgent;
 
         if (/Windows NT 10/.test(ua)) {
             return "Windows";
@@ -702,7 +762,9 @@ if(!reduceMotion && window.matchMedia('(pointer:fine)').matches){
             return "Android";
         }
 
-        if (/iPhone|iPad|iPod/.test(ua)) {
+        if (
+            /iPhone|iPad|iPod/.test(ua)
+        ) {
             return "iOS";
         }
 
@@ -717,12 +779,15 @@ if(!reduceMotion && window.matchMedia('(pointer:fine)').matches){
         return "Unknown";
     }
 
-    // ------------------------------------------
+
+    // =========================================================
     // BOT DETECTION
-    // ------------------------------------------
+    // =========================================================
 
     function detectBot() {
-        const ua = navigator.userAgent.toLowerCase();
+
+        const ua =
+            navigator.userAgent.toLowerCase();
 
         const botWords = [
             "bot",
@@ -737,14 +802,18 @@ if(!reduceMotion && window.matchMedia('(pointer:fine)').matches){
             "bingbot"
         ];
 
-        return botWords.some(word => ua.includes(word));
+        return botWords.some(
+            word => ua.includes(word)
+        );
     }
 
-    // ------------------------------------------
+
+    // =========================================================
     // SCROLL DEPTH
-    // ------------------------------------------
+    // =========================================================
 
     function updateScrollDepth() {
+
         const documentHeight =
             document.documentElement.scrollHeight;
 
@@ -755,260 +824,455 @@ if(!reduceMotion && window.matchMedia('(pointer:fine)').matches){
             window.scrollY;
 
         const scrollable =
-            documentHeight - viewportHeight;
+            documentHeight -
+            viewportHeight;
 
         if (scrollable <= 0) {
+
             maxScroll = 100;
+
             return;
         }
 
         const percentage =
-            Math.round((scrollTop / scrollable) * 100);
+            Math.round(
+                (scrollTop /
+                    scrollable) *
+                100
+            );
 
         maxScroll =
-            Math.max(maxScroll, Math.min(100, percentage));
+            Math.max(
+                maxScroll,
+                Math.min(
+                    100,
+                    percentage
+                )
+            );
     }
+
 
     window.addEventListener(
         "scroll",
         updateScrollDepth,
-        { passive: true }
+        {
+            passive: true
+        }
     );
 
-    // ------------------------------------------
+
+    // =========================================================
     // SECTION TRACKING
-    // ------------------------------------------
+    // =========================================================
 
     const sections =
-        document.querySelectorAll("section[id]");
+        document.querySelectorAll(
+            "section[id]"
+        );
+
 
     const sectionObserver =
         new IntersectionObserver(
+
             entries => {
 
-                entries.forEach(entry => {
+                entries.forEach(
+                    entry => {
 
-                    const id = entry.target.id;
+                        const id =
+                            entry.target.id;
 
-                    if (entry.isIntersecting) {
-
-                        if (!sectionsViewed.has(id)) {
-
-                            sectionsViewed.add(id);
-
-                            sectionStartTimes[id] =
-                                Date.now();
-                        }
-
-                    } else {
 
                         if (
-                            sectionStartTimes[id] &&
-                            sectionsViewed.has(id)
+                            entry.isIntersecting
                         ) {
 
-                            const elapsed =
-                                (Date.now() -
-                                    sectionStartTimes[id]) / 1000;
+                            if (
+                                !sectionsViewed.has(id)
+                            ) {
 
-                            sectionTimes[id] =
-                                Math.round(
-                                    (sectionTimes[id] || 0) +
-                                    elapsed
+                                sectionsViewed.add(
+                                    id
                                 );
 
-                            delete sectionStartTimes[id];
+                                sectionStartTimes[id] =
+                                    Date.now();
+                            }
+
+                        } else {
+
+                            if (
+                                sectionStartTimes[id] &&
+                                sectionsViewed.has(id)
+                            ) {
+
+                                const elapsed =
+                                    (
+                                        Date.now() -
+                                        sectionStartTimes[id]
+                                    ) / 1000;
+
+                                sectionTimes[id] =
+                                    Math.round(
+                                        (
+                                            sectionTimes[id] ||
+                                            0
+                                        ) + elapsed
+                                    );
+
+                                delete sectionStartTimes[id];
+                            }
                         }
+
                     }
-                });
+                );
+
             },
+
             {
                 threshold: 0.5
             }
+
         );
 
-    sections.forEach(section => {
-        sectionObserver.observe(section);
-    });
 
-    // ------------------------------------------
-    // CLICK TRACKING
-    // ------------------------------------------
+    sections.forEach(
+        section => {
+
+            sectionObserver.observe(
+                section
+            );
+
+        }
+    );
+
+
+    // =========================================================
+    // ACTION TRACKING
+    // =========================================================
 
     function addAction(action) {
 
-        if (!actions.includes(action)) {
+        if (
+            !actions.includes(action)
+        ) {
+
             actions.push(action);
+
         }
     }
 
-    // Resume buttons
+
+    // ---------------------------------------------------------
+    // RESUME
+    // ---------------------------------------------------------
+
     document.querySelectorAll(
         'a[href*="resume"], a[download], #downloadResume'
-    ).forEach(element => {
+    ).forEach(
+        element => {
 
-        element.addEventListener("click", () => {
-            addAction("Resume downloaded");
-        });
+            element.addEventListener(
+                "click",
+                () => {
 
-    });
+                    addAction(
+                        "Resume opened"
+                    );
 
-    // LinkedIn
+                }
+            );
+
+        }
+    );
+
+
+    // ---------------------------------------------------------
+    // LINKEDIN
+    // ---------------------------------------------------------
+
     document.querySelectorAll(
         'a[href*="linkedin.com"]'
-    ).forEach(element => {
+    ).forEach(
+        element => {
 
-        element.addEventListener("click", () => {
-            addAction("LinkedIn clicked");
-        });
+            element.addEventListener(
+                "click",
+                () => {
 
-    });
+                    addAction(
+                        "LinkedIn opened"
+                    );
 
-    // Email
-    document.querySelectorAll(
-        'a[href^="mailto:"]'
-    ).forEach(element => {
+                }
+            );
 
-        element.addEventListener("click", () => {
-            addAction("Email clicked");
-        });
+        }
+    );
 
-    });
 
-    // Phone
-    document.querySelectorAll(
-        'a[href^="tel:"]'
-    ).forEach(element => {
+    // ---------------------------------------------------------
+    // GITHUB
+    // ---------------------------------------------------------
 
-        element.addEventListener("click", () => {
-            addAction("Phone clicked");
-        });
-
-    });
-
-    // GitHub
     document.querySelectorAll(
         'a[href*="github.com"]'
-    ).forEach(element => {
+    ).forEach(
+        element => {
 
-        element.addEventListener("click", () => {
-            addAction("GitHub clicked");
-        });
+            element.addEventListener(
+                "click",
+                () => {
 
-    });
+                    addAction(
+                        "GitHub opened"
+                    );
 
-    // Telegram
+                }
+            );
+
+        }
+    );
+
+
+    // ---------------------------------------------------------
+    // EMAIL
+    // ---------------------------------------------------------
+
+    document.querySelectorAll(
+        'a[href^="mailto:"]'
+    ).forEach(
+        element => {
+
+            element.addEventListener(
+                "click",
+                () => {
+
+                    addAction(
+                        "Email clicked"
+                    );
+
+                }
+            );
+
+        }
+    );
+
+
+    // ---------------------------------------------------------
+    // PHONE
+    // ---------------------------------------------------------
+
+    document.querySelectorAll(
+        'a[href^="tel:"]'
+    ).forEach(
+        element => {
+
+            element.addEventListener(
+                "click",
+                () => {
+
+                    addAction(
+                        "Phone clicked"
+                    );
+
+                }
+            );
+
+        }
+    );
+
+
+    // ---------------------------------------------------------
+    // TELEGRAM
+    // ---------------------------------------------------------
+
     document.querySelectorAll(
         'a[href*="t.me"], a[href*="telegram.me"]'
-    ).forEach(element => {
+    ).forEach(
+        element => {
 
-        element.addEventListener("click", () => {
-            addAction("Telegram clicked");
-        });
+            element.addEventListener(
+                "click",
+                () => {
 
-    });
+                    addAction(
+                        "Telegram opened"
+                    );
 
-    // ------------------------------------------
-    // ENTRY PAGE
-    // ------------------------------------------
+                }
+            );
 
-    const entryPage =
-        window.location.pathname;
-
-    // ------------------------------------------
-    // BROWSER GEOLOCATION
-    // ------------------------------------------
-    //
-    // IMPORTANT:
-    // The browser will ask the visitor for permission.
-    // Location is collected only if permission is granted.
-    //
-    // ------------------------------------------
-
-    function requestLocation() {
-
-        if (!navigator.geolocation) {
-            return;
         }
+    );
 
-        navigator.geolocation.getCurrentPosition(
 
-            position => {
-
-                locationData = {
-                    latitude:
-                        position.coords.latitude,
-
-                    longitude:
-                        position.coords.longitude,
-
-                    accuracy:
-                        Math.round(
-                            position.coords.accuracy
-                        ),
-
-                    locationPermission:
-                        "granted"
-                };
-
-            },
-
-            () => {
-
-                locationData = {
-                    locationPermission:
-                        "denied"
-                };
-
-            },
-
-            {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
-            }
-        );
-    }
+    // =========================================================
+    // CERTIFICATE TRACKING
+    // =========================================================
 
     /*
-     * IMPORTANT:
-     * This asks for location permission when the page loads.
+     * Your certificate cards should contain:
      *
-     * If you prefer a "Share Location" button instead,
-     * we can change this later.
+     * class="certificate-link"
+     *
+     * and preferably:
+     *
+     * data-certificate="Certificate Name"
+     *
+     * Example:
+     *
+     * <a
+     *   href="assets/certificates/cisco.pdf"
+     *   class="cert-card certificate-link"
+     *   data-certificate="Cisco Networking Basics"
+     *   target="_blank"
+     *   rel="noopener noreferrer"
+     * >
      */
 
-    requestLocation();
 
-    // ------------------------------------------
-    // PREPARE DATA
-    // ------------------------------------------
+    document.querySelectorAll(
+        ".certificate-link"
+    ).forEach(
+        element => {
+
+            element.addEventListener(
+                "click",
+                () => {
+
+                    const name =
+                        element.dataset.certificate ||
+                        element.querySelector(
+                            "h4"
+                        )?.textContent?.trim() ||
+                        "Unknown Certificate";
+
+
+                    certificateActivity[name] = {
+
+                        name: name,
+
+                        viewed: true,
+
+                        clickedAt:
+                            Date.now()
+
+                    };
+
+
+                    addAction(
+                        `Certificate viewed: ${name}`
+                    );
+
+                }
+            );
+
+        }
+    );
+
+
+    // =========================================================
+    // NAVIGATION TRACKING
+    // =========================================================
+
+    document.querySelectorAll(
+        'nav a[href^="#"], #mobileMenu a[href^="#"]'
+    ).forEach(
+        element => {
+
+            element.addEventListener(
+                "click",
+                () => {
+
+                    const target =
+                        element.getAttribute(
+                            "href"
+                        );
+
+                    if (
+                        target &&
+                        target.length > 1
+                    ) {
+
+                        const sectionName =
+                            target
+                                .substring(1)
+                                .replace(
+                                    /-/g,
+                                    " "
+                                );
+
+
+                        addAction(
+                            `Navigation: ${sectionName}`
+                        );
+
+                    }
+
+                }
+            );
+
+        }
+    );
+
+
+    // =========================================================
+    // BUILD TRACKING DATA
+    // =========================================================
 
     function buildTrackingData() {
 
         updateScrollDepth();
 
-        // Finish currently active sections
-        Object.keys(sectionStartTimes)
-            .forEach(id => {
+
+        // -----------------------------------------------------
+        // FINISH CURRENTLY ACTIVE SECTIONS
+        // -----------------------------------------------------
+
+        Object.keys(
+            sectionStartTimes
+        ).forEach(
+            id => {
 
                 const elapsed =
-                    (Date.now() -
-                        sectionStartTimes[id]) / 1000;
+                    (
+                        Date.now() -
+                        sectionStartTimes[id]
+                    ) / 1000;
+
 
                 sectionTimes[id] =
                     Math.round(
-                        (sectionTimes[id] || 0) +
-                        elapsed
+                        (
+                            sectionTimes[id] ||
+                            0
+                        ) + elapsed
                     );
-            });
+
+            }
+        );
+
 
         const durationSeconds =
             Math.round(
-                (Date.now() - startTime) / 1000
+                (
+                    Date.now() -
+                    startTime
+                ) / 1000
             );
 
-        const data = {
+
+        // -----------------------------------------------------
+        // CREATE DATA
+        // -----------------------------------------------------
+
+        return {
+
+            // Event
+            eventType:
+                "summary",
+
 
             // Visit
             page:
@@ -1021,13 +1285,17 @@ if(!reduceMotion && window.matchMedia('(pointer:fine)').matches){
                 window.location.pathname,
 
             referrer:
-                document.referrer,
+                document.referrer ||
+                "Direct",
 
             duration:
-                formatDuration(durationSeconds),
+                formatDuration(
+                    durationSeconds
+                ),
 
             visitCount:
                 visitCount,
+
 
             // Device
             device:
@@ -1045,12 +1313,15 @@ if(!reduceMotion && window.matchMedia('(pointer:fine)').matches){
             language:
                 navigator.language,
 
-            // Activity
-            scrollDepth:
-                `${maxScroll}%`,
+
+            // Engagement
+            maxScroll:
+                maxScroll,
 
             sections:
-                Array.from(sectionsViewed),
+                Array.from(
+                    sectionsViewed
+                ),
 
             sectionTimes:
                 sectionTimes,
@@ -1058,87 +1329,89 @@ if(!reduceMotion && window.matchMedia('(pointer:fine)').matches){
             actions:
                 actions,
 
+
+            // Certificates
+            certificates:
+                Object.values(
+                    certificateActivity
+                ),
+
+
             // Security
             bot:
                 detectBot()
+
         };
+    }
 
-        // Add location if available
-        if (locationData) {
 
-            Object.assign(
-                data,
-                locationData
+    // =========================================================
+    // DURATION FORMAT
+    // =========================================================
+
+    function formatDuration(
+        seconds
+    ) {
+
+        const total =
+            Math.max(
+                0,
+                Math.round(
+                    Number(seconds) ||
+                    0
+                )
             );
 
-        }
-
-        return data;
-    }
-
-    // ------------------------------------------
-    // DURATION FORMAT
-    // ------------------------------------------
-
-    function formatDuration(seconds) {
 
         const minutes =
-            Math.floor(seconds / 60);
+            Math.floor(
+                total / 60
+            );
 
-        const remainingSeconds =
-            seconds % 60;
 
-        if (minutes === 0) {
-            return `${remainingSeconds}s`;
+        const remaining =
+            total % 60;
+
+
+        if (
+            minutes === 0
+        ) {
+
+            return `${remaining}s`;
+
         }
 
-        return `${minutes}m ${remainingSeconds}s`;
+
+        return `${minutes}m ${remaining}s`;
     }
 
-    // ------------------------------------------
-    // SEND TRACKING DATA
-    // ------------------------------------------
 
-    let sent = false;
+    // =========================================================
+    // SEND INITIAL VISITOR
+    // =========================================================
 
-    function sendTrackingData() {
+    function sendInitialVisit() {
 
-        if (sent) {
+        if (initialSent) {
             return;
         }
 
-        sent = true;
+
+        initialSent = true;
+
 
         const data =
             buildTrackingData();
 
-        const payload =
-            JSON.stringify(data);
 
-        // sendBeacon is useful when the visitor
-        // leaves the page.
-        if (navigator.sendBeacon) {
+        data.eventType =
+            "visit";
 
-            const blob =
-                new Blob(
-                    [payload],
-                    {
-                        type: "application/json"
-                    }
-                );
 
-            navigator.sendBeacon(
-                TRACK_URL,
-                blob
-            );
-
-            return;
-        }
-
-        // Fallback
         fetch(
             TRACK_URL,
             {
+
                 method: "POST",
 
                 headers: {
@@ -1146,25 +1419,144 @@ if(!reduceMotion && window.matchMedia('(pointer:fine)').matches){
                         "application/json"
                 },
 
-                body: payload,
+                body:
+                    JSON.stringify(data),
 
                 keepalive: true
+
             }
-        ).catch(() => {});
+        ).catch(
+            () => {}
+        );
     }
 
-    // ------------------------------------------
-    // SEND WHEN VISITOR LEAVES
-    // ------------------------------------------
+
+    // =========================================================
+    // SEND FINAL SESSION SUMMARY
+    // =========================================================
+
+    function sendSessionSummary() {
+
+        if (summarySent) {
+            return;
+        }
+
+
+        summarySent = true;
+
+
+        const data =
+            buildTrackingData();
+
+
+        data.eventType =
+            "summary";
+
+
+        const payload =
+            JSON.stringify(
+                data
+            );
+
+
+        // -----------------------------------------------------
+        // sendBeacon
+        // -----------------------------------------------------
+
+        if (
+            navigator.sendBeacon
+        ) {
+
+            try {
+
+                const blob =
+                    new Blob(
+                        [payload],
+                        {
+                            type:
+                                "application/json"
+                        }
+                    );
+
+
+                const sent =
+                    navigator.sendBeacon(
+                        TRACK_URL,
+                        blob
+                    );
+
+
+                if (sent) {
+                    return;
+                }
+
+            } catch (error) {
+
+                // Continue to fetch fallback
+
+            }
+        }
+
+
+        // -----------------------------------------------------
+        // FETCH FALLBACK
+        // -----------------------------------------------------
+
+        fetch(
+            TRACK_URL,
+            {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body:
+                    payload,
+
+                keepalive: true
+
+            }
+        ).catch(
+            () => {}
+        );
+    }
+
+
+    // =========================================================
+    // INITIAL VISITOR ALERT
+    // =========================================================
+
+    /*
+     * Small delay allows the page to finish loading
+     * before the first tracking request.
+     */
+
+    setTimeout(
+        () => {
+
+            sendInitialVisit();
+
+        },
+        500
+    );
+
+
+    // =========================================================
+    // SESSION END
+    // =========================================================
 
     window.addEventListener(
         "pagehide",
-        sendTrackingData
+        () => {
+
+            sendSessionSummary();
+
+        }
     );
 
-    // ------------------------------------------
-    // ALSO SEND IF TAB BECOMES HIDDEN
-    // ------------------------------------------
 
     document.addEventListener(
         "visibilitychange",
@@ -1174,11 +1566,14 @@ if(!reduceMotion && window.matchMedia('(pointer:fine)').matches){
                 document.visibilityState ===
                 "hidden"
             ) {
-                sendTrackingData();
+
+                sendSessionSummary();
+
             }
 
         }
     );
+
 
 })();
 </script>
