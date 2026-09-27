@@ -512,5 +512,21 @@ if(!reduceMotion && window.matchMedia('(pointer:fine)').matches){
   animate();
 })();
 </script>
+  <script>
+    fetch("/api/track", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            page: window.location.pathname,
+            referrer: document.referrer,
+            screen: `${window.screen.width}x${window.screen.height}`,
+            language: navigator.language
+        })
+    }).catch(() => {
+        // Tracking failure should not affect the website
+    });
+</script>
 </body>
 </html>
