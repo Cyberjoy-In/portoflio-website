@@ -513,20 +513,586 @@ if(!reduceMotion && window.matchMedia('(pointer:fine)').matches){
 })();
 </script>
   <script>
-    fetch("/api/track", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            page: window.location.pathname,
-            referrer: document.referrer,
-            screen: `${window.screen.width}x${window.screen.height}`,
-            language: navigator.language
-        })
-    }).catch(() => {
-        // Tracking failure should not affect the website
+    <script>
+(() => {
+    "use strict";
+
+    // ==========================================
+    // VISITOR TRACKER
+    // ==========================================
+
+    const TRACK_URL = "/api/track";
+
+    const startTime = Date.now();
+
+    let maxScroll = 0;
+    let locationData = null;
+
+    const sectionsViewed = new Set();
+    const sectionStartTimes = {};
+    const sectionTimes = {};
+
+    const actions = [];
+
+    // ------------------------------------------
+    // VISIT COUNT
+    // ------------------------------------------
+
+    let visitCount = 1;
+
+    try {
+        const previousVisits =
+            parseInt(localStorage.getItem("portfolioVisitCount") || "0", 10);
+
+        visitCount = previousVisits + 1;
+
+        localStorage.setItem(
+            "portfolioVisitCount",
+            visitCount.toString()
+        );
+    } catch (e) {
+        visitCount = 1;
+    }
+
+    // ------------------------------------------
+    // DEVICE
+    // ------------------------------------------
+
+    function getDeviceType() {
+        const width = window.innerWidth;
+
+        if (width <= 768) {
+            return "Mobile";
+        }
+
+        if (width <= 1024) {
+            return "Tablet";
+        }
+
+        return "Desktop";
+    }
+
+    // ------------------------------------------
+    // BROWSER
+    // ------------------------------------------
+
+    function getBrowser() {
+        const ua = navigator.userAgent;
+
+        if (ua.includes("Edg/")) return "Microsoft Edge";
+        if (ua.includes("OPR/")) return "Opera";
+        if (ua.includes("Chrome/")) return "Chrome";
+        if (ua.includes("Firefox/")) return "Firefox";
+        if (ua.includes("Safari/") && !ua.includes("Chrome/")) {
+            return "Safari";
+        }
+
+        return "Unknown";
+    }
+
+    // ------------------------------------------
+    // OPERATING SYSTEM
+    // ------------------------------------------
+
+    function getOS() {
+        const ua = navigator.userAgent;
+
+        if (/Windows NT 10/.test(ua)) {
+            return "Windows";
+        }
+
+        if (/Windows NT 6.3/.test(ua)) {
+            return "Windows 8.1";
+        }
+
+        if (/Windows NT 6.1/.test(ua)) {
+            return "Windows 7";
+        }
+
+        if (/Android/.test(ua)) {
+            return "Android";
+        }
+
+        if (/iPhone|iPad|iPod/.test(ua)) {
+            return "iOS";
+        }
+
+        if (/Mac OS X/.test(ua)) {
+            return "macOS";
+        }
+
+        if (/Linux/.test(ua)) {
+            return "Linux";
+        }
+
+        return "Unknown";
+    }
+
+    // ------------------------------------------
+    // BOT DETECTION
+    // ------------------------------------------
+
+    function detectBot() {
+        const ua = navigator.userAgent.toLowerCase();
+
+        const botWords = [
+            "bot",
+            "crawler",
+            "spider",
+            "slurp",
+            "headless",
+            "facebookexternalhit",
+            "linkedinbot",
+            "twitterbot",
+            "googlebot",
+            "bingbot"
+        ];
+
+        return botWords.some(word => ua.includes(word));
+    }
+
+    // ------------------------------------------
+    // SCROLL DEPTH
+    // ------------------------------------------
+
+    function updateScrollDepth() {
+        const documentHeight =
+            document.documentElement.scrollHeight;
+
+        const viewportHeight =
+            window.innerHeight;
+
+        const scrollTop =
+            window.scrollY;
+
+        const scrollable =
+            documentHeight - viewportHeight;
+
+        if (scrollable <= 0) {
+            maxScroll = 100;
+            return;
+        }
+
+        const percentage =
+            Math.round((scrollTop / scrollable) * 100);
+
+        maxScroll =
+            Math.max(maxScroll, Math.min(100, percentage));
+    }
+
+    window.addEventListener(
+        "scroll",
+        updateScrollDepth,
+        { passive: true }
+    );
+
+    // ------------------------------------------
+    // SECTION TRACKING
+    // ------------------------------------------
+
+    const sections =
+        document.querySelectorAll("section[id]");
+
+    const sectionObserver =
+        new IntersectionObserver(
+            entries => {
+
+                entries.forEach(entry => {
+
+                    const id = entry.target.id;
+
+                    if (entry.isIntersecting) {
+
+                        if (!sectionsViewed.has(id)) {
+
+                            sectionsViewed.add(id);
+
+                            sectionStartTimes[id] =
+                                Date.now();
+                        }
+
+                    } else {
+
+                        if (
+                            sectionStartTimes[id] &&
+                            sectionsViewed.has(id)
+                        ) {
+
+                            const elapsed =
+                                (Date.now() -
+                                    sectionStartTimes[id]) / 1000;
+
+                            sectionTimes[id] =
+                                Math.round(
+                                    (sectionTimes[id] || 0) +
+                                    elapsed
+                                );
+
+                            delete sectionStartTimes[id];
+                        }
+                    }
+                });
+            },
+            {
+                threshold: 0.5
+            }
+        );
+
+    sections.forEach(section => {
+        sectionObserver.observe(section);
     });
+
+    // ------------------------------------------
+    // CLICK TRACKING
+    // ------------------------------------------
+
+    function addAction(action) {
+
+        if (!actions.includes(action)) {
+            actions.push(action);
+        }
+    }
+
+    // Resume buttons
+    document.querySelectorAll(
+        'a[href*="resume"], a[download], #downloadResume'
+    ).forEach(element => {
+
+        element.addEventListener("click", () => {
+            addAction("Resume downloaded");
+        });
+
+    });
+
+    // LinkedIn
+    document.querySelectorAll(
+        'a[href*="linkedin.com"]'
+    ).forEach(element => {
+
+        element.addEventListener("click", () => {
+            addAction("LinkedIn clicked");
+        });
+
+    });
+
+    // Email
+    document.querySelectorAll(
+        'a[href^="mailto:"]'
+    ).forEach(element => {
+
+        element.addEventListener("click", () => {
+            addAction("Email clicked");
+        });
+
+    });
+
+    // Phone
+    document.querySelectorAll(
+        'a[href^="tel:"]'
+    ).forEach(element => {
+
+        element.addEventListener("click", () => {
+            addAction("Phone clicked");
+        });
+
+    });
+
+    // GitHub
+    document.querySelectorAll(
+        'a[href*="github.com"]'
+    ).forEach(element => {
+
+        element.addEventListener("click", () => {
+            addAction("GitHub clicked");
+        });
+
+    });
+
+    // Telegram
+    document.querySelectorAll(
+        'a[href*="t.me"], a[href*="telegram.me"]'
+    ).forEach(element => {
+
+        element.addEventListener("click", () => {
+            addAction("Telegram clicked");
+        });
+
+    });
+
+    // ------------------------------------------
+    // ENTRY PAGE
+    // ------------------------------------------
+
+    const entryPage =
+        window.location.pathname;
+
+    // ------------------------------------------
+    // BROWSER GEOLOCATION
+    // ------------------------------------------
+    //
+    // IMPORTANT:
+    // The browser will ask the visitor for permission.
+    // Location is collected only if permission is granted.
+    //
+    // ------------------------------------------
+
+    function requestLocation() {
+
+        if (!navigator.geolocation) {
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+
+            position => {
+
+                locationData = {
+                    latitude:
+                        position.coords.latitude,
+
+                    longitude:
+                        position.coords.longitude,
+
+                    accuracy:
+                        Math.round(
+                            position.coords.accuracy
+                        ),
+
+                    locationPermission:
+                        "granted"
+                };
+
+            },
+
+            () => {
+
+                locationData = {
+                    locationPermission:
+                        "denied"
+                };
+
+            },
+
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            }
+        );
+    }
+
+    /*
+     * IMPORTANT:
+     * This asks for location permission when the page loads.
+     *
+     * If you prefer a "Share Location" button instead,
+     * we can change this later.
+     */
+
+    requestLocation();
+
+    // ------------------------------------------
+    // PREPARE DATA
+    // ------------------------------------------
+
+    function buildTrackingData() {
+
+        updateScrollDepth();
+
+        // Finish currently active sections
+        Object.keys(sectionStartTimes)
+            .forEach(id => {
+
+                const elapsed =
+                    (Date.now() -
+                        sectionStartTimes[id]) / 1000;
+
+                sectionTimes[id] =
+                    Math.round(
+                        (sectionTimes[id] || 0) +
+                        elapsed
+                    );
+            });
+
+        const durationSeconds =
+            Math.round(
+                (Date.now() - startTime) / 1000
+            );
+
+        const data = {
+
+            // Visit
+            page:
+                window.location.pathname,
+
+            entryPage:
+                entryPage,
+
+            exitPage:
+                window.location.pathname,
+
+            referrer:
+                document.referrer,
+
+            duration:
+                formatDuration(durationSeconds),
+
+            visitCount:
+                visitCount,
+
+            // Device
+            device:
+                getDeviceType(),
+
+            browser:
+                getBrowser(),
+
+            os:
+                getOS(),
+
+            screen:
+                `${window.screen.width}x${window.screen.height}`,
+
+            language:
+                navigator.language,
+
+            // Activity
+            scrollDepth:
+                `${maxScroll}%`,
+
+            sections:
+                Array.from(sectionsViewed),
+
+            sectionTimes:
+                sectionTimes,
+
+            actions:
+                actions,
+
+            // Security
+            bot:
+                detectBot()
+        };
+
+        // Add location if available
+        if (locationData) {
+
+            Object.assign(
+                data,
+                locationData
+            );
+
+        }
+
+        return data;
+    }
+
+    // ------------------------------------------
+    // DURATION FORMAT
+    // ------------------------------------------
+
+    function formatDuration(seconds) {
+
+        const minutes =
+            Math.floor(seconds / 60);
+
+        const remainingSeconds =
+            seconds % 60;
+
+        if (minutes === 0) {
+            return `${remainingSeconds}s`;
+        }
+
+        return `${minutes}m ${remainingSeconds}s`;
+    }
+
+    // ------------------------------------------
+    // SEND TRACKING DATA
+    // ------------------------------------------
+
+    let sent = false;
+
+    function sendTrackingData() {
+
+        if (sent) {
+            return;
+        }
+
+        sent = true;
+
+        const data =
+            buildTrackingData();
+
+        const payload =
+            JSON.stringify(data);
+
+        // sendBeacon is useful when the visitor
+        // leaves the page.
+        if (navigator.sendBeacon) {
+
+            const blob =
+                new Blob(
+                    [payload],
+                    {
+                        type: "application/json"
+                    }
+                );
+
+            navigator.sendBeacon(
+                TRACK_URL,
+                blob
+            );
+
+            return;
+        }
+
+        // Fallback
+        fetch(
+            TRACK_URL,
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body: payload,
+
+                keepalive: true
+            }
+        ).catch(() => {});
+    }
+
+    // ------------------------------------------
+    // SEND WHEN VISITOR LEAVES
+    // ------------------------------------------
+
+    window.addEventListener(
+        "pagehide",
+        sendTrackingData
+    );
+
+    // ------------------------------------------
+    // ALSO SEND IF TAB BECOMES HIDDEN
+    // ------------------------------------------
+
+    document.addEventListener(
+        "visibilitychange",
+        () => {
+
+            if (
+                document.visibilityState ===
+                "hidden"
+            ) {
+                sendTrackingData();
+            }
+
+        }
+    );
+
+})();
+</script>
 </script>
 </body>
 </html>
