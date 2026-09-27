@@ -13,9 +13,26 @@
   --glow: 0 0 44px rgba(98,234,214,0.22);
   font-family:'Inter',sans-serif;
 }
+[data-theme="light"]{
+  --bg:#f3f7fb; --panel:rgba(255,255,255,.72); --panel-brd:rgba(23,50,78,.15);
+  --ink:#10243b; --muted:#52667d; --accent:#087f78; --accent2:#6356c7; --warm:#a45b14;
+  --glow:0 0 44px rgba(8,127,120,.18);
+}
 *{box-sizing:border-box; margin:0; padding:0;}
 html{background:var(--bg); scroll-behavior:smooth; scroll-padding-top:calc(92px + env(safe-area-inset-top,0px)); scrollbar-gutter:stable; overscroll-behavior-y:none;}
 body{background-color:var(--bg); background-image:radial-gradient(ellipse at 50% -20%, #132238 0%, var(--bg) 48%); color:var(--ink); min-height:100%; overflow-x:hidden; overscroll-behavior-x:none; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); isolation:isolate;}
+[data-theme="light"] body{background-image:radial-gradient(ellipse at 50% -20%,#dcebf3 0%,var(--bg) 52%);}
+[data-theme="light"] .grid-bg{background-image:linear-gradient(rgba(23,50,78,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(23,50,78,.07) 1px,transparent 1px);}
+[data-theme="light"] nav{background:rgba(255,255,255,.78); border-color:rgba(23,50,78,.16); box-shadow:0 12px 40px rgba(23,50,78,.14), inset 0 1px rgba(255,255,255,.9);}
+[data-theme="light"] nav .cv-btn{color:#f3f7fb;}
+[data-theme="light"] .btn-secondary{background:rgba(255,255,255,.7); box-shadow:inset 0 1px rgba(255,255,255,.9),0 8px 22px rgba(23,50,78,.06);}
+[data-theme="light"] .card,[data-theme="light"] .camp-card,[data-theme="light"] .cert-card{background:linear-gradient(145deg,rgba(255,255,255,.9),rgba(232,241,248,.76)); box-shadow:inset 0 1px rgba(255,255,255,.9),0 16px 40px rgba(23,50,78,.1);}
+[data-theme="light"] .card:hover,[data-theme="light"] .camp-card:hover,[data-theme="light"] .cert-card:hover{box-shadow:inset 0 1px rgba(255,255,255,.95),0 20px 48px rgba(23,50,78,.16);}
+[data-theme="light"] .contact-panel{background:linear-gradient(135deg,rgba(226,246,246,.95),rgba(236,232,255,.92)); border-color:rgba(8,127,120,.24); box-shadow:0 20px 60px rgba(23,50,78,.14),inset 0 1px rgba(255,255,255,.95);}
+[data-theme="light"] .cert-modal-backdrop{background:rgba(11,28,46,.48);}
+[data-theme="light"] .cert-modal-card{background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(235,243,249,.98)); border-color:rgba(8,127,120,.26); box-shadow:0 30px 80px rgba(23,50,78,.28),inset 0 1px rgba(255,255,255,.95);}
+[data-theme="light"] .cert-modal-close{background:rgba(23,50,78,.06);}
+[data-theme="light"] .back-top{border-color:rgba(23,50,78,.18);}
 body{--mouse-x:50%; --mouse-y:20%; --grid-x:0px; --grid-y:0px;}
 h1,h2,h3,.disp{font-family:'Space Grotesk',sans-serif;}
 a{color:inherit; text-decoration:none;}
@@ -50,12 +67,32 @@ nav ul{list-style:none; display:flex; gap:22px;}
 nav a{font-size:13.5px; color:var(--muted); transition:color .25s;}
 nav a:hover, nav a.active{color:var(--ink);}
 nav .cv-btn{background:var(--ink); color:#05070a; padding:9px 18px; border-radius:999px; font-size:13px; font-weight:600;}
+.theme-toggle{width:34px; height:34px; border:1px solid var(--panel-brd); border-radius:50%; background:rgba(255,255,255,.06); color:var(--ink); cursor:pointer; font-size:16px; transition:transform .25s, background .25s;}
+.theme-toggle:hover{transform:rotate(18deg) scale(1.06); background:rgba(98,234,214,.14);}
 #hamburger{display:none; width:20px; height:14px; position:relative; cursor:pointer; background:none; border:none;}
 #hamburger span{position:absolute; left:0; width:100%; height:2px; background:var(--ink); transition:.3s;}
 #hamburger span:nth-child(1){top:0;} #hamburger span:nth-child(2){top:6px;} #hamburger span:nth-child(3){top:12px;}
-#mobileMenu{display:none; position:fixed; inset:0; z-index:99; background:rgba(5,7,10,0.97); backdrop-filter:blur(10px);
-  flex-direction:column; align-items:center; justify-content:center; gap:26px;}
+#hamburger.is-open span:nth-child(1){top:6px; transform:rotate(45deg);} #hamburger.is-open span:nth-child(2){opacity:0;} #hamburger.is-open span:nth-child(3){top:6px; transform:rotate(-45deg);}
+#mobileMenu{display:flex; position:fixed; inset:0; z-index:99; background:rgba(5,7,10,0.97); backdrop-filter:blur(10px);
+  flex-direction:column; align-items:center; justify-content:center; gap:26px; opacity:0; visibility:hidden; pointer-events:none; transform:translateY(-14px); transition:opacity .3s ease, visibility .3s ease, transform .3s ease;}
+#mobileMenu.is-open{opacity:1; visibility:visible; pointer-events:auto; transform:none;}
+[data-theme="light"] #mobileMenu{background:rgba(243,247,251,.96);}
 #mobileMenu a{font-size:22px; font-family:'Space Grotesk',sans-serif;}
+body.menu-open{overflow:hidden;}
+
+.scroll-progress{position:fixed; top:0; left:0; right:0; z-index:150; height:3px; pointer-events:none; background:rgba(255,255,255,.06);}
+.scroll-progress span{display:block; width:0; height:100%; background:linear-gradient(90deg,var(--accent),var(--accent2)); box-shadow:0 0 14px rgba(98,234,214,.7); transition:width .08s linear;}
+.back-top{position:fixed; right:24px; bottom:24px; z-index:90; width:44px; height:44px; border:1px solid var(--panel-brd); border-radius:50%; background:rgba(8,15,27,.78); color:var(--ink); cursor:pointer; opacity:0; visibility:hidden; transform:translateY(12px); transition:opacity .25s, visibility .25s, transform .25s, background .25s; backdrop-filter:blur(12px);}
+.back-top.visible{opacity:1; visibility:visible; transform:none;}
+.back-top:hover{background:var(--accent); color:#061016;}
+[data-theme="light"] .back-top{background:rgba(255,255,255,.82);}
+.page-loader{position:fixed; inset:0; z-index:300; display:grid; place-items:center; background:var(--bg); transition:opacity .5s ease, visibility .5s ease;}
+.page-loader.is-hidden{opacity:0; visibility:hidden; pointer-events:none;}
+.loader-mark{color:var(--accent); font:700 28px 'Space Grotesk',sans-serif; letter-spacing:.08em; animation:loader-pulse 1.1s ease-in-out infinite;}
+.loader-line{width:120px; height:2px; margin-top:16px; overflow:hidden; background:rgba(255,255,255,.12);}
+.loader-line::after{content:''; display:block; width:45%; height:100%; background:var(--accent); animation:loader-line 1s ease-in-out infinite;}
+@keyframes loader-pulse{50%{opacity:.45; transform:scale(.97);}}
+@keyframes loader-line{from{transform:translateX(-110%);}to{transform:translateX(250%);}}
 
 /* hero */
 #hero{min-height:100svh; display:flex; align-items:center; padding-top:120px;}
@@ -113,12 +150,17 @@ h1.name{font-size:clamp(40px,6vw,68px); line-height:1.02; font-weight:700; lette
 .tag-row{display:flex; flex-wrap:wrap; gap:10px;}
 .tag{background:var(--panel); border:1px solid var(--panel-brd); padding:9px 16px; border-radius:10px; font-size:13.5px; transition:transform .25s, border-color .25s, background .25s;}
 .tag:hover{transform:translateY(-3px) scale(1.03); border-color:var(--accent); background:rgba(73,217,201,0.08); color:var(--accent);}
+.skill-filters{display:flex; flex-wrap:wrap; gap:10px; margin:-22px 0 36px;}
+.skill-filter{border:1px solid var(--panel-brd); border-radius:999px; background:var(--panel); color:var(--muted); padding:9px 16px; font:600 12px 'Inter',sans-serif; cursor:pointer; transition:background .25s, color .25s, border-color .25s, transform .25s;}
+.skill-filter:hover{transform:translateY(-2px); color:var(--ink); border-color:var(--accent);}
+.skill-filter.active{background:var(--accent); border-color:var(--accent); color:#061016;}
+.skill-block.skill-hidden{display:none;}
 
 /* camps */
 .camp-grid{display:grid; grid-template-columns:1fr 1fr; gap:22px;}
 .camp-card{background:linear-gradient(145deg,rgba(20,34,53,.72),rgba(10,18,30,.58)); border:1px solid var(--panel-brd); border-radius:20px; overflow:hidden; box-shadow:0 16px 50px rgba(0,0,0,.18); transition:transform .35s, border-color .35s, box-shadow .35s;}
 .camp-card:hover{transform:translateY(-7px); border-color:rgba(98,234,214,.38); box-shadow:0 24px 60px rgba(0,0,0,.3);}
-.camp-card img{width:100%; display:block; aspect-ratio:4/3; object-fit:cover;}
+.camp-card img{width:100%; height:auto; display:block; object-fit:contain;}
 .camp-body{padding:22px;}
 .camp-body h3{font-size:16px; margin-bottom:8px;}
 .camp-body p{color:var(--muted); font-size:14px; line-height:1.65;}
@@ -210,6 +252,8 @@ body.page-ready #hero .hero-grid > :nth-child(2){animation-delay:140ms;}
 <div class="grid-bg"></div>
 <div class="cursor-glow" aria-hidden="true"></div>
 <div class="ambient-bg" aria-hidden="true"></div>
+<div class="scroll-progress" aria-hidden="true"><span id="scrollProgress"></span></div>
+<div class="page-loader" id="pageLoader" aria-label="Loading Cyber Joy portfolio"><div><div class="loader-mark">Cyber Joy</div><div class="loader-line"></div></div></div>
 
 <nav>
   <span class="mark">JH_</span>
@@ -222,6 +266,7 @@ body.page-ready #hero .hero-grid > :nth-child(2){animation-delay:140ms;}
     <li><a href="#contact">Contact</a></li>
   </ul>
   <a class="cv-btn" id="navResume" href="assets/resume.pdf" download="Joy_Halder_Resume.pdf">Resume</a>
+  <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to light theme" title="Toggle theme">☼</button>
   <button id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
 </nav>
 
@@ -233,6 +278,7 @@ body.page-ready #hero .hero-grid > :nth-child(2){animation-delay:140ms;}
   <a href="#education">Education</a>
   <a href="#contact">Contact</a>
 </div>
+<button class="back-top" id="backTop" type="button" aria-label="Back to top">↑</button>
 
 <div class="cert-modal" id="certModal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="certModalTitle">
   <div class="cert-modal-backdrop" data-cert-close></div>
@@ -266,7 +312,7 @@ body.page-ready #hero .hero-grid > :nth-child(2){animation-delay:140ms;}
       <div class="portrait-stage" id="portraitStage">
         <div class="portrait-glow"></div>
         <div class="portrait-ring"></div>
-        <img class="portrait-img" src="assets/img/profile.jpeg" alt="Joy Halder">
+        <img class="portrait-img" src="assets/img/profile.jpeg" alt="Joy Halder" fetchpriority="high">
       </div>
     </div>
   </div>
@@ -308,6 +354,14 @@ body.page-ready #hero .hero-grid > :nth-child(2){animation-delay:140ms;}
       <h2>Tools &amp; technical range</h2>
       <p>Grouped directly from hands-on work — no invented proficiency levels.</p>
     </div>
+    <div class="skill-filters reveal" role="group" aria-label="Filter skills">
+      <button class="skill-filter active" type="button" data-filter="all">All</button>
+      <button class="skill-filter" type="button" data-filter="osint">OSINT</button>
+      <button class="skill-filter" type="button" data-filter="forensics">Forensics</button>
+      <button class="skill-filter" type="button" data-filter="programming">Programming</button>
+      <button class="skill-filter" type="button" data-filter="soc">SOC</button>
+      <button class="skill-filter" type="button" data-filter="tools">Tools</button>
+    </div>
     <div id="skillsList"></div>
   </div>
 </section>
@@ -321,14 +375,14 @@ body.page-ready #hero .hero-grid > :nth-child(2){animation-delay:140ms;}
     </div>
     <div class="camp-grid">
       <div class="camp-card reveal">
-        <img src="assets/img/rishi.jpg" alt="Cyber Awareness Camp at Rishi Aurobindo Balkendram, Vidyalanka High School">
+        <img src="assets/img/rishi.jpg" alt="Cyber Awareness Camp at Rishi Aurobindo Balkendram, Vidyalanka High School" loading="lazy" decoding="async">
         <div class="camp-body">
           <h3>Rishi Aurobindo Balkendram, Vidyalanka High School</h3>
           <p>Empowering young minds with cyber knowledge! We organised a Cyber Awareness Camp at Rishi Aurobindo Balkendram, Vidyalanka High School for Class 8 &amp; 9 students. As students of cybersecurity, my aim is simple — to share what we learn and help our juniors build awareness about online safety.</p>
         </div>
       </div>
       <div class="camp-card reveal">
-        <img src="assets/img/belmuri.jpg" alt="Cyber Awareness Camp at Belmuri Union Institution">
+        <img src="assets/img/belmuri.jpg" alt="Cyber Awareness Camp at Belmuri Union Institution" loading="lazy" decoding="async">
         <div class="camp-body">
           <h3>Belmuri Union Institution</h3>
           <p>"Life is indeed a circle! We eventually return to our past." Years ago, I used to walk through the gates of Belmuri Union Institution with a bag full of books and a head full of dreams. Today, standing in that same spot with the teachers who shaped me and the bright young minds of the future, I felt that circle complete. I had the absolute privilege of organizing and conducting a Cyber Awareness Camp at my own school.</p>
@@ -396,13 +450,13 @@ const certs = [
 ];
 
 const skills = [
-  {h:"Digital Forensics & Investigation", items:["Android APK Forensics (Static & Dynamic)","Preservation of Digital Evidence","CDR/IPDR Analysis","Incident Containment","Chain of Custody Maintenance"]},
-  {h:"Intelligence & OSINT", items:["Full Intelligence Cycle","Google Dorking","Sock Puppet Management","Advanced Identity Attribution (Phone, Email, Username)"]},
-  {h:"Specialized Threat Analysis", items:["GEOINT","IMINT (Image Metadata/EXIF Forensics)","FININT","SOCMINT","Dark Web Monitoring","Phishing Analysis","Email OSINT"]},
-  {h:"SOC Operations", items:["Log Management","SIEM Fundamentals","Threat Intelligence"]},
-  {h:"Programming Languages", items:["Python","JavaScript","C"]},
-  {h:"Tools", items:["GHunt","Google Dorks","OSINT Framework","ExifTool","Shodan","Google Earth","Autopsy","FTK Imager","Wireshark","MobSF","Nmap","Burp Suite","HashCalc","Crystal","Happenstance","Holehe","Social Media Analyzer"]},
-  {h:"Technologies", items:["MongoDB","MySQL","Git & GitHub","Linux","Kali Linux","Windows","JSON","HTML/CSS","Networking (TCP/IP, DNS, HTTP/HTTPS)","SQL","VirtualBox","Vercel"]},
+  {h:"Digital Forensics & Investigation", category:"forensics", items:["Android APK Forensics (Static & Dynamic)","Preservation of Digital Evidence","CDR/IPDR Analysis","Incident Containment","Chain of Custody Maintenance"]},
+  {h:"Intelligence & OSINT", category:"osint", items:["Full Intelligence Cycle","Google Dorking","Sock Puppet Management","Advanced Identity Attribution (Phone, Email, Username)"]},
+  {h:"Specialized Threat Analysis", category:"osint", items:["GEOINT","IMINT (Image Metadata/EXIF Forensics)","FININT","SOCMINT","Dark Web Monitoring","Phishing Analysis","Email OSINT"]},
+  {h:"SOC Operations", category:"soc", items:["Log Management","SIEM Fundamentals","Threat Intelligence"]},
+  {h:"Programming Languages", category:"programming", items:["Python","JavaScript","C"]},
+  {h:"Tools", category:"tools", items:["GHunt","Google Dorks","OSINT Framework","ExifTool","Shodan","Google Earth","Autopsy","FTK Imager","Wireshark","MobSF","Nmap","Burp Suite","HashCalc","Crystal","Happenstance","Holehe","Social Media Analyzer"]},
+  {h:"Technologies", category:"programming", items:["MongoDB","MySQL","Git & GitHub","Linux","Kali Linux","Windows","JSON","HTML/CSS","Networking (TCP/IP, DNS, HTTP/HTTPS)","SQL","VirtualBox","Vercel"]},
 ];
 
 function renderTimeline(el, data){
@@ -410,9 +464,9 @@ function renderTimeline(el, data){
     <div class="t-item reveal">
       <div class="t-date">${d.date}</div>
       <div class="t-role">${d.role}</div>
-      <div class="t-org">${d.logo ? `<img src="${d.logo}" alt="" class="t-logo">` : ''}${d.org}</div>
+      <div class="t-org">${d.logo ? `<img src="${d.logo}" alt="" class="t-logo" loading="lazy" decoding="async">` : ''}${d.org}</div>
       ${d.desc ? `<div class="t-desc">${d.desc}</div>` : ''}
-      ${d.img ? `<div class="t-media"><img src="${d.img}" alt="${d.org}"></div>` : ''}
+      ${d.img ? `<div class="t-media"><img src="${d.img}" alt="${d.org}" loading="lazy" decoding="async"></div>` : ''}
     </div>`).join('');
 }
 renderTimeline(document.getElementById('timelineList'), experience);
@@ -434,7 +488,13 @@ document.getElementById('certList').innerHTML = certs.map((c, index) => `
   </button>
 `).join('');
 document.getElementById('skillsList').innerHTML = skills.map(s => `
-  <div class="skill-block reveal"><h3>${s.h}</h3><div class="tag-row">${s.items.map(i=>`<span class="tag">${i}</span>`).join('')}</div></div>`).join('');
+  <div class="skill-block reveal" data-skill-category="${s.category}"><h3>${s.h}</h3><div class="tag-row">${s.items.map(i=>`<span class="tag">${i}</span>`).join('')}</div></div>`).join('');
+
+document.querySelectorAll('.skill-filter').forEach(filter=>filter.addEventListener('click', ()=>{
+  const selected = filter.dataset.filter;
+  document.querySelectorAll('.skill-filter').forEach(button=>button.classList.toggle('active', button === filter));
+  document.querySelectorAll('.skill-block').forEach(block=>block.classList.toggle('skill-hidden', selected !== 'all' && block.dataset.skillCategory !== selected));
+}));
 
 // ---- certificate viewer ----
 const certModal = document.getElementById('certModal');
@@ -524,11 +584,61 @@ if(!reduceMotion){
 // ---- nav active state + mobile menu ----
 const hamburger = document.getElementById('hamburger');
 const mobileMenu = document.getElementById('mobileMenu');
+function closeMobileMenu(){
+  mobileMenu.classList.remove('is-open');
+  hamburger.classList.remove('is-open');
+  hamburger.setAttribute('aria-expanded','false');
+  document.body.classList.remove('menu-open');
+}
+hamburger.setAttribute('aria-expanded','false');
 hamburger.addEventListener('click', ()=>{
-  const open = mobileMenu.style.display === 'flex';
-  mobileMenu.style.display = open ? 'none' : 'flex';
+  const open = mobileMenu.classList.toggle('is-open');
+  hamburger.classList.toggle('is-open', open);
+  hamburger.setAttribute('aria-expanded', String(open));
+  document.body.classList.toggle('menu-open', open);
 });
-mobileMenu.querySelectorAll('a').forEach(a=>a.addEventListener('click', ()=> mobileMenu.style.display='none'));
+mobileMenu.querySelectorAll('a').forEach(a=>a.addEventListener('click', closeMobileMenu));
+mobileMenu.addEventListener('click', event=>{ if(event.target === mobileMenu) closeMobileMenu(); });
+
+// ---- theme, loading, progress and back-to-top controls ----
+const themeToggle = document.getElementById('themeToggle');
+const savedTheme = localStorage.getItem('portfolio-theme');
+const initialTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+document.documentElement.dataset.theme = initialTheme;
+function updateThemeButton(){
+  const light = document.documentElement.dataset.theme === 'light';
+  themeToggle.textContent = light ? '☾' : '☼';
+  themeToggle.setAttribute('aria-label', light ? 'Switch to dark theme' : 'Switch to light theme');
+  themeToggle.title = light ? 'Switch to dark theme' : 'Switch to light theme';
+}
+updateThemeButton();
+themeToggle.addEventListener('click', ()=>{
+  const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+  document.documentElement.dataset.theme = next;
+  localStorage.setItem('portfolio-theme', next);
+  updateThemeButton();
+});
+
+const scrollProgress = document.getElementById('scrollProgress');
+const backTop = document.getElementById('backTop');
+let scrollTicking = false;
+function updateScrollControls(){
+  const max = document.documentElement.scrollHeight - window.innerHeight;
+  const progress = max > 0 ? Math.min(100, (window.scrollY / max) * 100) : 0;
+  scrollProgress.style.width = `${progress}%`;
+  backTop.classList.toggle('visible', window.scrollY > window.innerHeight * .65);
+  scrollTicking = false;
+}
+window.addEventListener('scroll', ()=>{
+  if(!scrollTicking){ requestAnimationFrame(updateScrollControls); scrollTicking = true; }
+}, {passive:true});
+backTop.addEventListener('click', ()=>window.scrollTo({top:0, behavior:'smooth'}));
+updateScrollControls();
+
+const pageLoader = document.getElementById('pageLoader');
+function hidePageLoader(){ pageLoader.classList.add('is-hidden'); }
+window.addEventListener('load', hidePageLoader, {once:true});
+window.setTimeout(hidePageLoader, 2200);
 
 // Make anchor navigation feel like a transition between portfolio pages.
 document.querySelectorAll('a[href^="#"]').forEach(link=>{
